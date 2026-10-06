@@ -23,6 +23,7 @@ A personal, hands-on collection of professional-grade write-ups documenting comp
 | **Watcher** | TryHackMe | Local File Inclusion (LFI) · FTP enumeration · Shell stabilization · Linux privilege escalation | [Report](LFI/watcher/watcher.md) |
 | **SocialHub** | DockerLabs | Stored XSS · Authentication bypass workflow · Linux privilege escalation | [Report](XSS/socialhub/socialhub%20dockerlabs.md) |
 | **0day** | TryHackMe | Directory brute-forcing (ffuf) · Vulnerability scanning (Nikto) · Public exploit adaptation · Shell stabilization · Kernel/Linux privesc | [Report](linux/0day-TryHackMe/0day.md) |
+| **Hack Smarter Security** | TryHackMe | FTP anonymous access · Web testing · Dell OMSA exploitation · web.config credential harvesting · Unquoted service path privilege escalation | [Report](windows/hack_smarter_security/Hack%20Smarter%20Security.md) |
 
 ### Kubernetes & Cloud-Native
 
