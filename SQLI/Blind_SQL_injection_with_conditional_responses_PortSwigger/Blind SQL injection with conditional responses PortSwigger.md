@@ -13,7 +13,7 @@ The attack chain is:
 5. Extract each character through `SUBSTRING()` and a brute-force charset.
 6. Authenticate as `administrator` and complete the objective.
 
-![img](2026-10-21_15-58.png)
+![img](./img/2026-10-21_15-58.png)
 
 ## 1. Injection Point Identification
 
@@ -21,7 +21,8 @@ The `TrackingId` cookie is embedded into a backend query without parameterizatio
 
 Appending a single quote to the cookie value breaks the string literal and alters the query structure:
 
-![img](2026-10-21_15-59.png)
+
+![img](./img/2026-10-21_15-59.png)
 
 The disappearance of the banner confirms that the injected quote modified query evaluation. At this stage the behavior is consistent with a syntax or logic failure, but the absence of verbose errors means the vulnerability must be exploited blindly.
 
@@ -29,7 +30,7 @@ The disappearance of the banner confirms that the injected quote modified query 
 
 A true conditional is injected to verify that the backend evaluates attacker-controlled predicates and that the banner reflects the boolean outcome:
 
-![img](2026-10-21_16-03.png)
+![img](./img/2026-10-21_16-03.png)
 
 The payload follows the form:
 
@@ -52,7 +53,7 @@ The injected value closes the original string literal, injects an additional `AN
 
 A second conditional confirms that subqueries against arbitrary tables can be evaluated within the predicate:
 
-![img](2026-10-21_16-09.png)
+![img](./img/2026-10-21_16-09.png)
 
 ```sql
 ' AND (SELECT 'a' FROM users LIMIT 1)='a'--
@@ -96,7 +97,7 @@ The lab description establishes that the `administrator` account exists. The ext
 
 A conditional is injected to confirm that the `administrator` row is reachable through the injection point:
 
-![img](2026-10-21_16-11.png)
+![img](./img/2026-10-21_16-11.png)
 
 ```sql
 ' AND (SELECT 'a' FROM users WHERE username='administrator')='a'--
@@ -112,15 +113,15 @@ The next predicate tests the password length. Rather than testing a single lengt
 ' AND (SELECT LENGTH(password) FROM users WHERE username='administrator') > 1--
 ```
 
-![img](2026-10-21_16-15.png)
+![img](./img/2026-10-21_16-15.png)
 
 The TRUE response confirms the length exceeds 1. To determine the exact length, the threshold is parameterized and iterated with Burp Intruder.
 
 The numeric literal is marked as the payload position, and the payload type is set to `Numbers`:
 
-![img](2026-10-21_16-17.png)
+![img](./img/2026-10-21_16-17.png)
 
-![img](2026-10-21_16-18.png)
+![img](./img/2026-10-21_16-18.png)
 
 The payload configuration is:
 
@@ -128,11 +129,11 @@ The payload configuration is:
 - To: `30`
 - Step: `1`
 
-![img](2026-10-21_16-19.png)
+![img](./img/2026-10-21_16-19.png)
 
 The attack is executed and responses are compared by `Content-Length`, which is a stable proxy for the presence of the banner:
 
-![img](2026-10-21_16-49.png)
+![img](./img/2026-10-21_16-49.png)
 
 The response size changes when the predicate flips from TRUE to FALSE. Given the predicate `LENGTH(password) > n`, the boundary occurs at `n = 20`: the condition still holds for `n = 19` and fails for `n = 20`, which establishes:
 
@@ -156,29 +157,29 @@ With the length known, the password is reconstructed positionally using `SUBSTRI
 
 The first argument is the source string, the second is the 1-indexed starting offset, and the third is the number of characters to return. Extracting one character at a time keeps the predicate scalar and the oracle binary.
 
-![img](2026-10-21_16-30.png)
+![img](./img/2026-10-21_16-30.png)
 
 The candidate character is marked as the payload position:
 
-![img](2026-10-21_16-34.png)
+![img](./img/2026-10-21_16-34.png)
 
 The payload type is `Brute forcer`, which enumerates a charset rather than a known list:
 
-![img](2026-10-21_16-35.png)
+![img](./img/2026-10-21_16-35.png)
 
 The payload configuration uses a minimum length of `1` and a maximum length of `1`, restricting each request to a single-character candidate:
 
-![img](2026-10-21_16-35_1.png)
+![img](./img/2026-10-21_16-35_1.png)
 
 The attack is executed and `Content-Length` is inspected: the request whose response differs from the FALSE baseline corresponds to the correct character.
 
-![img](2026-10-21_16-37.png)
+![img](./img/2026-10-21_16-37.png)
 
 For position 1, the oracle identifies `u` as the first character of the `administrator` password.
 
 The position argument is then incremented, and the process is repeated:
 
-![img](2026-10-21_16-38.png)
+![img](./img/2026-10-21_16-38.png)
 
 ```sql
 SUBSTRING(password, 2, 1)
@@ -207,7 +208,7 @@ The linear brute force can be replaced by binary search over the character's ord
 
 After repeating the positional oracle for all 20 offsets, the full password is recovered. The credentials `administrator:<recovered password>` are then submitted to the login form:
 
-![img](2026-10-21_16-46.png)
+![img](./img/2026-10-21_16-46.png)
 
 Authentication succeeds and the lab is solved. The vulnerability class is boolean-based blind SQL injection; its root cause is the concatenation of untrusted cookie data into a SQL statement. The structural remediation is the use of parameterized queries (prepared statements) with bound parameters, which prevents literal termination and predicate injection regardless of the boolean oracle's presence.
 
